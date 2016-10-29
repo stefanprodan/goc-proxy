@@ -32,7 +32,7 @@ func StartServer() {
 	http.Handle("/metrics", promhttp.Handler())
 
 	http.HandleFunc("/_/registry", func(w http.ResponseWriter, req *http.Request) {
-		render.JSON(w, http.StatusOK, config)
+		render.JSON(w, http.StatusOK, registry)
 	})
 	http.HandleFunc("/_/ping", func(w http.ResponseWriter, req *http.Request) {
 		render.Text(w, http.StatusOK, "pong")

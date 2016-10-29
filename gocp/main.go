@@ -5,12 +5,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	//"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/braintree/manners"
 )
 
 var config = &Config{}
+var registry = &Registry{}
 
 func main() {
 
@@ -24,6 +26,9 @@ func main() {
 	flag.Parse()
 
 	setLogLevel(config.LogLevel)
+
+	registry.Catalog = make(map[string][]string)
+	registry.Sha = makeSHA(registry.Catalog)
 
 	go StartServer()
 
