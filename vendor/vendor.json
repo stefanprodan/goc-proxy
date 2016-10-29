@@ -27,6 +27,12 @@
 			"revisionTime": "2016-08-04T10:47:26Z"
 		},
 		{
+			"checksumSHA1": "4PnssXOKq//AJMg/TEv9aA4n/t8=",
+			"path": "github.com/braintree/manners",
+			"revision": "82a8879fc5fd0381fa8b2d8033b19bf255252088",
+			"revisionTime": "2016-04-18T04:36:13Z"
+		},
+		{
 			"checksumSHA1": "hJV+UGAwwFqSbsOEEj3nUvL7oN0=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "98fa357170587e470c5f27d3c3ea0947b71eb455",
