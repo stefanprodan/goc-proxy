@@ -11,12 +11,14 @@ import (
 	"github.com/braintree/manners"
 )
 
-var config = &Config{}
-var registry = &Registry{}
+var (
+	config   = &Config{}
+	registry = &Registry{}
+)
 
 func main() {
 
-	flag.StringVar(&config.Environment, "Environment", "DEBUG", "environment: DEBUG, DEV, STG, PROD")
+	flag.StringVar(&config.Environment, "Environment", "DEBUG", "environment: DEBUG, DEV, TEST, STG, PROD")
 	flag.StringVar(&config.LogLevel, "LogLevel", "debug", "logging threshold level: debug|info|warn|error|fatal|panic")
 	flag.IntVar(&config.Port, "Port", 8000, "HTTP port to listen on")
 	flag.StringVar(&config.ElectionKeyPrefix, "ElectionKeyPrefix", "leader/election/", "format: leader/election/")
