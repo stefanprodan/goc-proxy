@@ -38,7 +38,7 @@ func StartServer() {
 		render.Text(w, http.StatusOK, "pong")
 	})
 	http.HandleFunc("/_/status", func(w http.ResponseWriter, req *http.Request) {
-		render.JSON(w, http.StatusOK, config)
+		render.JSON(w, http.StatusOK, Info())
 	})
 	http.HandleFunc("/_/config", func(w http.ResponseWriter, req *http.Request) {
 		render.JSON(w, http.StatusOK, config)
