@@ -18,6 +18,8 @@ func main() {
 	flag.StringVar(&config.HttpScheme, "HttpScheme", "http", "proxy scheme: http or https")
 	flag.IntVar(&config.MaxIdleConnsPerHost, "MaxIdleConnsPerHost", 500, "proxy max idle connections per host")
 	flag.BoolVar(&config.DisableKeepAlives, "DisableKeepAlives", true, "proxy disable KeepAlive")
+	flag.StringVar(&config.ServiceName, "ServiceName", "goc-proxy", "service name should be unique at the server level")
+	flag.StringVar(&config.ClusterName, "ClusterName", "goc-proxy-cluster", "cluster name should be unique at the DC level")
 	flag.Parse()
 
 	setLogLevel(config.LogLevel)
@@ -34,28 +36,35 @@ func main() {
 	}
 	go proxy.Start()
 
+	election, err := NewLeadershipElection(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go election.StartElection()
+
 	//wait for SIGINT (Ctrl+C) or SIGTERM (docker stop)
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigchan
 	log.Info("Shutting down...")
 	// 10s window before docker kills the container
-	stop(proxy, consulSync)
+	stop(election, proxy, consulSync)
 	log.Info("Graceful shutdown succeeded")
 }
 
-type stoppableService interface {
+type IStoppable interface {
 	Stop()
 }
 
-func stop(services ...stoppableService) {
+func stop(services ...IStoppable) {
 	for _, service := range services {
 		service.Stop()
 	}
 }
 
-func setLogLevel(levelname string) {
-	level, err := log.ParseLevel(levelname)
+func setLogLevel(levelName string) {
+	level, err := log.ParseLevel(levelName)
 	if err != nil {
 		log.Fatal(err)
 	}

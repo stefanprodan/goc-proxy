@@ -12,13 +12,13 @@ import (
 type Registry struct {
 	Catalog map[string][]string
 	Sha     string
-	Mutex   sync.RWMutex
+	mutex   sync.RWMutex
 }
 
 // Lookup returns the service endpoints
 func (r *Registry) Lookup(service string) ([]string, error) {
-	r.Mutex.RLock()
-	defer r.Mutex.RUnlock()
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
 
 	endpoints, ok := r.Catalog[service]
 	if !ok {
@@ -29,8 +29,8 @@ func (r *Registry) Lookup(service string) ([]string, error) {
 
 // Update overrides internal catalog
 func (r *Registry) Update(catalog map[string][]string) {
-	r.Mutex.Lock()
-	defer r.Mutex.Unlock()
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
 	// clean catalog
 	for k := range r.Catalog {

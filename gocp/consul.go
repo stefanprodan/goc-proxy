@@ -17,7 +17,7 @@ type ConsulSync struct {
 	Config         *consul_api.Config
 	CatalogWatcher *watch.WatchPlan
 	Watchers       map[string]*watch.WatchPlan
-	Mutex          sync.Mutex
+	mutex          sync.Mutex
 }
 
 // NewConsulSync init Consul sync
@@ -77,8 +77,8 @@ func (cs *ConsulSync) updateRegistry() error {
 
 func (cs *ConsulSync) syncWatchers() {
 
-	cs.Mutex.Lock()
-	defer cs.Mutex.Unlock()
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 	for sw, wt := range cs.Watchers {
 		_, ok := cs.Registry.Catalog[sw]
 		if !ok {
@@ -89,8 +89,8 @@ func (cs *ConsulSync) syncWatchers() {
 		}
 	}
 
-	cs.Registry.Mutex.RLock()
-	defer cs.Registry.Mutex.RUnlock()
+	cs.Registry.mutex.RLock()
+	defer cs.Registry.mutex.RUnlock()
 	for service := range cs.Registry.Catalog {
 		_, ok := cs.Watchers[service]
 		if !ok {
@@ -127,8 +127,8 @@ func (cs *ConsulSync) StartCatalogWatcher() error {
 		return err
 	}
 	wt.Handler = cs.handleCatalogChanges
-	cs.Mutex.Lock()
-	defer cs.Mutex.Unlock()
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 	cs.CatalogWatcher = wt
 	go wt.Run(cs.Config.Address)
 	return nil
@@ -144,8 +144,8 @@ func (cs *ConsulSync) handleCatalogChanges(idx uint64, data interface{}) {
 
 // Stop all Consul watchers
 func (cs *ConsulSync) Stop() {
-	cs.Mutex.Lock()
-	defer cs.Mutex.Unlock()
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
 	cs.CatalogWatcher.Stop()
 	for _, w := range cs.Watchers {
 		w.Stop()
