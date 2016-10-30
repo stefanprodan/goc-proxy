@@ -22,7 +22,7 @@ WORKDIR /goc-proxy/gocp/
 RUN go build -o gocp .
 
 
-HEALTHCHECK CMD curl --fail http://localhost:8000/ping || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:8000/_/status || exit 1
 
 EXPOSE 8000/tcp
 

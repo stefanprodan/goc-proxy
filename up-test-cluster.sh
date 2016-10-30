@@ -16,7 +16,7 @@ docker run -d -p 8000:8000 \
 --restart unless-stopped \
 --ulimit nofile=65536:65536 \
 -e CONSUL_HTTP_ADDR="${hostIP}:8500" \
--e SERVICE_CHECK_HTTP="/status" \
+-e SERVICE_CHECK_HTTP="/_/status" \
 -e SERVICE_CHECK_INTERVAL="15s" \
 $image goc-proxy \
 -Environment=TEST \
