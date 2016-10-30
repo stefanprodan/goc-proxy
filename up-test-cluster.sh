@@ -19,12 +19,14 @@ docker run -d -p 8000:8000 \
 -e SERVICE_CHECK_HTTP="/_/status" \
 -e SERVICE_CHECK_INTERVAL="15s" \
 $image goc-proxy \
+-ServiceName=$image \
+-ClusterName=cl1 \
 -Environment=TEST \
--Port=8000 \
 -Loglevel=info \
+-Port=8000 \
 -MaxIdleConnsPerHost=10000 
 
-# start alpha services with one node
+# start alpha service with one node
 docker run -d -P \
 -h alpha-node1 \
 --name alpha-node1 \
@@ -33,7 +35,7 @@ docker run -d -P \
 -e SERVICE_CHECK_INTERVAL="15s" \
 emilevauge/whoami
 
-# start beta services with 2 nodes
+# start beta service with 2 nodes
 for ((i=1; i<3; i++)); do
 
 docker run -d -P \
@@ -46,7 +48,7 @@ emilevauge/whoami
 
 done
 
-# start gamma services with 3 nodes
+# start gamma service with 3 nodes
 for ((i=1; i<4; i++)); do
 
 docker run -d -P \
