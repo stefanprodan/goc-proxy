@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
@@ -78,9 +79,24 @@ func (cs *RegistrySync) updateRegistry() error {
 		}
 
 		for _, s := range services {
-			if s.Service.Address == "" || s.Service.Service == "goc-proxy" {
+			// ignore nodes with no address and goc-proxy nodes
+			if s.Service.Address == "" || strings.Contains(s.Service.Service, "goc-proxy") {
 				continue
 			}
+			var critical bool
+			for _, check := range s.Checks {
+				if check.Status == "critical" {
+					critical = true
+					break
+				}
+			}
+
+			// ignore node if status is critical
+			if critical {
+				continue
+			}
+
+			// add service node to registry
 			registry[service] = append(registry[service], fmt.Sprintf("%s:%v", s.Service.Address, s.Service.Port))
 		}
 	}
