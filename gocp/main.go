@@ -5,18 +5,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	//"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/braintree/manners"
-)
-
-var (
-	config = &Config{}
 )
 
 func main() {
-
+	var config = &Config{}
 	flag.StringVar(&config.Environment, "Environment", "DEBUG", "environment: DEBUG, DEV, TEST, STG, PROD")
 	flag.StringVar(&config.LogLevel, "LogLevel", "debug", "logging threshold level: debug|info|warn|error|fatal|panic")
 	flag.IntVar(&config.Port, "Port", 8000, "HTTP port to listen on")
@@ -34,15 +28,19 @@ func main() {
 	}
 	go consulSync.StartCatalogWatcher()
 
-	go StartServer(consulSync)
+	var proxy = &ReverseProxy{
+		Config:   config,
+		Registry: consulSync.Registry,
+	}
+	go proxy.Start()
 
 	//wait for SIGINT (Ctrl+C) or SIGTERM (docker stop)
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigchan
 	log.Info("Shutting down...")
-	manners.Close()
-	consulSync.Stop()
+	// 10s window before docker kills the container
+	stop(proxy, consulSync)
 	log.Info("Graceful shutdown succeeded")
 }
 

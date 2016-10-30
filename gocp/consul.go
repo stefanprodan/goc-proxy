@@ -9,15 +9,18 @@ import (
 	watch "github.com/hashicorp/consul/watch"
 )
 
+// ConsulSync handles Consul catalog and service endpoints changes
+// and syncs with the local registry
 type ConsulSync struct {
 	Registry       *Registry
 	Client         *consul_api.Client
 	Config         *consul_api.Config
-	catalogWatcher *watch.WatchPlan
-	watchers       map[string]*watch.WatchPlan
-	mutex          sync.Mutex
+	CatalogWatcher *watch.WatchPlan
+	Watchers       map[string]*watch.WatchPlan
+	Mutex          sync.Mutex
 }
 
+// NewConsulSync init Consul sync
 func NewConsulSync() (*ConsulSync, error) {
 
 	watchers := make(map[string]*watch.WatchPlan)
@@ -35,13 +38,13 @@ func NewConsulSync() (*ConsulSync, error) {
 		Registry: registry,
 		Client:   client,
 		Config:   config,
-		watchers: watchers,
+		Watchers: watchers,
 	}
 	return c, nil
 }
 
-// UpdateRegistry sync local registry with Consul catalog
-func (cs *ConsulSync) UpdateRegistry() error {
+// sync local registry with Consul catalog
+func (cs *ConsulSync) updateRegistry() error {
 	registry := make(map[string][]string)
 
 	services, _, err := cs.Client.Catalog().Services(nil)
@@ -74,22 +77,22 @@ func (cs *ConsulSync) UpdateRegistry() error {
 
 func (cs *ConsulSync) syncWatchers() {
 
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-	for sw, wt := range cs.watchers {
+	cs.Mutex.Lock()
+	defer cs.Mutex.Unlock()
+	for sw, wt := range cs.Watchers {
 		_, ok := cs.Registry.Catalog[sw]
 		if !ok {
 			//stop watch since service is gone
 			wt.Stop()
-			delete(cs.watchers, sw)
+			delete(cs.Watchers, sw)
 			log.Infof("Watch for service %v has been removed", sw)
 		}
 	}
 
-	cs.Registry.mutex.RLock()
-	defer cs.Registry.mutex.RUnlock()
+	cs.Registry.Mutex.RLock()
+	defer cs.Registry.Mutex.RUnlock()
 	for service := range cs.Registry.Catalog {
-		_, ok := cs.watchers[service]
+		_, ok := cs.Watchers[service]
 		if !ok {
 			//start watcher for new service
 			cs.startServiceWatcher(service)
@@ -104,14 +107,14 @@ func (cs *ConsulSync) startServiceWatcher(service string) error {
 		return err
 	}
 	wt.Handler = cs.handleServiceChanges
-	cs.watchers[service] = wt
+	cs.Watchers[service] = wt
 	go wt.Run(cs.Config.Address)
 	return nil
 }
 
 func (cs *ConsulSync) handleServiceChanges(idx uint64, data interface{}) {
 	log.Info("Service change detected")
-	err := cs.UpdateRegistry()
+	err := cs.updateRegistry()
 	if err != nil {
 		log.Warnf("ConsulSync.UpdateRegistry error %v", err.Error())
 	}
@@ -124,26 +127,27 @@ func (cs *ConsulSync) StartCatalogWatcher() error {
 		return err
 	}
 	wt.Handler = cs.handleCatalogChanges
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-	cs.catalogWatcher = wt
+	cs.Mutex.Lock()
+	defer cs.Mutex.Unlock()
+	cs.CatalogWatcher = wt
 	go wt.Run(cs.Config.Address)
 	return nil
 }
 
 func (cs *ConsulSync) handleCatalogChanges(idx uint64, data interface{}) {
 	log.Info("Catalog change detected")
-	err := cs.UpdateRegistry()
+	err := cs.updateRegistry()
 	if err != nil {
 		log.Warnf("ConsulSync.UpdateRegistry error %v", err.Error())
 	}
 }
 
+// Stop all Consul watchers
 func (cs *ConsulSync) Stop() {
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-	cs.catalogWatcher.Stop()
-	for _, w := range cs.watchers {
+	cs.Mutex.Lock()
+	defer cs.Mutex.Unlock()
+	cs.CatalogWatcher.Stop()
+	for _, w := range cs.Watchers {
 		w.Stop()
 	}
 }

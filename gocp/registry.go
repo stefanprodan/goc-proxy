@@ -8,17 +8,17 @@ import (
 	"sync"
 )
 
-// Registry in sync with Consul catalog
+// Registry in memory store of Consul catalog
 type Registry struct {
 	Catalog map[string][]string
 	Sha     string
-	mutex   sync.RWMutex
+	Mutex   sync.RWMutex
 }
 
 // Lookup returns the service endpoints
 func (r *Registry) Lookup(service string) ([]string, error) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
+	r.Mutex.RLock()
+	defer r.Mutex.RUnlock()
 
 	endpoints, ok := r.Catalog[service]
 	if !ok {
@@ -29,8 +29,8 @@ func (r *Registry) Lookup(service string) ([]string, error) {
 
 // Update overrides internal catalog
 func (r *Registry) Update(catalog map[string][]string) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	r.Mutex.Lock()
+	defer r.Mutex.Unlock()
 
 	// clean catalog
 	for k := range r.Catalog {
