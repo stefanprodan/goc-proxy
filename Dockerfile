@@ -19,7 +19,7 @@ WORKDIR /goc-proxy/gocp/
 #BUILD_FLAGS=-X main.BuildDate=$(BUILD_DATE) -X main.Revision=$(GIT_COMMIT) -X main.Branch=$(GIT_BRANCH)
 #go build -ldflags "$(BUILD_FLAGS)" -o gocp .
 
-RUN go build -o gocp .
+RUN go build -o goc-proxy .
 
 
 HEALTHCHECK CMD curl --fail http://localhost:8000/_/status || exit 1
@@ -29,4 +29,4 @@ EXPOSE 8000/tcp
 env PATH /goc-proxy/gocp:$PATH
 
 # run
-CMD ["gocp"]
+CMD ["goc-proxy"]
