@@ -39,16 +39,16 @@ func main() {
 		Registry: registrySync.Registry,
 	}
 
-	// start procs in backgound
-	Start(leadershipElection, registrySync, reverseProxy)
+	// start background workers
+	startWorkers(leadershipElection, registrySync, reverseProxy)
 
 	//wait for SIGINT (Ctrl+C) or SIGTERM (docker stop)
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigchan
-	log.Info("Shutting down...")
+	log.Info("Stopping background workers...")
 	// 10s window before docker kills the container
-	Stop(leadershipElection, registrySync, reverseProxy)
+	stopWorkers(leadershipElection, registrySync, reverseProxy)
 	log.Info("Graceful shutdown succeeded")
 }
 
