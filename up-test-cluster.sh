@@ -22,7 +22,7 @@ $image goc-proxy \
 -ServiceName=$image \
 -ClusterName=cl1 \
 -Environment=TEST \
--Loglevel=info \
+-LogLevel=info \
 -Port=8000 \
 -MaxIdleConnsPerHost=10000 
 
