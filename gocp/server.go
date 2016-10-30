@@ -11,7 +11,7 @@ import (
 )
 
 // StartServer starts the HTTP reverse proxy server
-func StartServer() {
+func StartServer(cs *ConsulSync) {
 
 	registerMetrics()
 
@@ -19,6 +19,9 @@ func StartServer() {
 		IndentJSON: true,
 		Layout:     "layout",
 	})
+
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = config.MaxIdleConnsPerHost
+	http.DefaultTransport.(*http.Transport).DisableKeepAlives = config.DisableKeepAlives
 
 	//	err := proxy.StartConsulSync()
 	//	if err != nil {
@@ -32,7 +35,7 @@ func StartServer() {
 	http.Handle("/metrics", promhttp.Handler())
 
 	http.HandleFunc("/_/registry", func(w http.ResponseWriter, req *http.Request) {
-		render.JSON(w, http.StatusOK, registry)
+		render.JSON(w, http.StatusOK, cs.Registry)
 	})
 	http.HandleFunc("/_/ping", func(w http.ResponseWriter, req *http.Request) {
 		render.Text(w, http.StatusOK, "pong")

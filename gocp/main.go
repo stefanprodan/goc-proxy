@@ -12,8 +12,7 @@ import (
 )
 
 var (
-	config   = &Config{}
-	registry = &Registry{}
+	config = &Config{}
 )
 
 func main() {
@@ -29,10 +28,13 @@ func main() {
 
 	setLogLevel(config.LogLevel)
 
-	registry.Catalog = make(map[string][]string)
-	registry.Sha = makeSHA(registry.Catalog)
+	consulSync, err := NewConsulSync()
+	if err != nil {
+		log.Fatal(err)
+	}
+	go consulSync.StartCatalogWatcher()
 
-	go StartServer()
+	go StartServer(consulSync)
 
 	//wait for SIGINT (Ctrl+C) or SIGTERM (docker stop)
 	sigchan := make(chan os.Signal, 1)
@@ -40,6 +42,7 @@ func main() {
 	<-sigchan
 	log.Info("Shutting down...")
 	manners.Close()
+	consulSync.Stop()
 	log.Info("Graceful shutdown succeeded")
 }
 
