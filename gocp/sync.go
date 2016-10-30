@@ -86,7 +86,9 @@ func (cs *RegistrySync) updateRegistry() error {
 			var critical bool
 			for _, check := range s.Checks {
 				if check.Status == "critical" {
+					log.Debugf("Service %v node %v:%v is being omitted from registry, health is critical.", s.Service, s.Service.Address, s.Service.Port)
 					critical = true
+					proxy_service_node_status.WithLabelValues(s.Service.Service, s.Node.Node, fmt.Sprintf("%v;%v", s.Service.Address, s.Service.Port)).Set(0)
 					break
 				}
 			}
@@ -98,6 +100,7 @@ func (cs *RegistrySync) updateRegistry() error {
 
 			// add service node to registry
 			registry[service] = append(registry[service], fmt.Sprintf("%s:%v", s.Service.Address, s.Service.Port))
+			proxy_service_node_status.WithLabelValues(s.Service.Service, s.Node.Node, fmt.Sprintf("%v:%v", s.Service.Address, s.Service.Port)).Set(1)
 		}
 	}
 
