@@ -24,24 +24,23 @@ func main() {
 
 	setLogLevel(config.LogLevel)
 
-	consulSync, err := NewConsulSync()
+	leadershipElection, err := NewLeadershipElection(config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go consulSync.StartCatalogWatcher()
 
-	var proxy = &ReverseProxy{
+	registrySync, err := NewRegistrySync()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var reverseProxy = &ReverseProxy{
 		Config:   config,
-		Registry: consulSync.Registry,
-	}
-	go proxy.Start()
-
-	election, err := NewLeadershipElection(config)
-	if err != nil {
-		log.Fatal(err)
+		Registry: registrySync.Registry,
 	}
 
-	go election.StartElection()
+	// start procs in backgound
+	Start(leadershipElection, registrySync, reverseProxy)
 
 	//wait for SIGINT (Ctrl+C) or SIGTERM (docker stop)
 	sigchan := make(chan os.Signal, 1)
@@ -49,18 +48,8 @@ func main() {
 	<-sigchan
 	log.Info("Shutting down...")
 	// 10s window before docker kills the container
-	stop(election, proxy, consulSync)
+	Stop(leadershipElection, registrySync, reverseProxy)
 	log.Info("Graceful shutdown succeeded")
-}
-
-type IStoppable interface {
-	Stop()
-}
-
-func stop(services ...IStoppable) {
-	for _, service := range services {
-		service.Stop()
-	}
 }
 
 func setLogLevel(levelName string) {

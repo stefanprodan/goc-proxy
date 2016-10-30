@@ -27,7 +27,7 @@ type ProxyTransport struct {
 	Service string
 }
 
-// StartServer starts the HTTP reverse proxy server
+// Start the HTTP reverse proxy server
 func (r *ReverseProxy) Start() {
 
 	registerMetrics()
@@ -59,6 +59,11 @@ func (r *ReverseProxy) Start() {
 
 	log.Infof("Starting server on port %v", r.Config.Port)
 	log.Fatal(manners.ListenAndServe(fmt.Sprintf(":%v", r.Config.Port), http.DefaultServeMux))
+}
+
+// Stop attempts to gracefully shutdown the HTTP server
+func (r *ReverseProxy) Stop() {
+	manners.Close()
 }
 
 // ReverseHandlerFunc creates a http handler that will resolve services from registry
@@ -122,9 +127,4 @@ func extractServiceName(target *url.URL) (name string, err error) {
 	name = tmp[0]
 	target.Path = "/" + strings.Join(tmp[1:], "/")
 	return name, nil
-}
-
-// Stop attempts to gracefully shutdown the HTTP server
-func (r *ReverseProxy) Stop() {
-	manners.Close()
 }

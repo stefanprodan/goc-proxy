@@ -51,7 +51,7 @@ func NewLeadershipElection(config *Config) (*LeadershipElection, error) {
 }
 
 // StartElection starts tje leader election process
-func (e *LeadershipElection) StartElection() {
+func (e *LeadershipElection) Start() {
 	stop := false
 	for !stop {
 		select {

@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-// Registry in memory store of Consul catalog
+// Registry is an in memory store of Consul catalog
 type Registry struct {
 	Catalog map[string][]string
 	Sha     string

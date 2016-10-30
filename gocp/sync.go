@@ -9,9 +9,9 @@ import (
 	watch "github.com/hashicorp/consul/watch"
 )
 
-// ConsulSync handles Consul catalog and service endpoints changes
-// and syncs with the local registry
-type ConsulSync struct {
+// ConsulSync syncs Consul catalog and service endpoints changes
+// with the local registry
+type RegistrySync struct {
 	Registry       *Registry
 	Client         *consul_api.Client
 	Config         *consul_api.Config
@@ -20,8 +20,8 @@ type ConsulSync struct {
 	mutex          sync.Mutex
 }
 
-// NewConsulSync init Consul sync
-func NewConsulSync() (*ConsulSync, error) {
+// NewRegistrySync init Consul sync
+func NewRegistrySync() (*RegistrySync, error) {
 
 	watchers := make(map[string]*watch.WatchPlan)
 	registry := &Registry{}
@@ -34,7 +34,7 @@ func NewConsulSync() (*ConsulSync, error) {
 		return nil, err
 	}
 
-	c := &ConsulSync{
+	c := &RegistrySync{
 		Registry: registry,
 		Client:   client,
 		Config:   config,
@@ -43,8 +43,28 @@ func NewConsulSync() (*ConsulSync, error) {
 	return c, nil
 }
 
+// Start Consul watchers for service catalog
+func (cs *RegistrySync) Start() {
+	wt, _ := watch.Parse(map[string]interface{}{"type": "services"})
+	wt.Handler = cs.handleCatalogChanges
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+	cs.CatalogWatcher = wt
+	go wt.Run(cs.Config.Address)
+}
+
+// Stop all Consul watchers
+func (cs *RegistrySync) Stop() {
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+	cs.CatalogWatcher.Stop()
+	for _, w := range cs.Watchers {
+		w.Stop()
+	}
+}
+
 // sync local registry with Consul catalog
-func (cs *ConsulSync) updateRegistry() error {
+func (cs *RegistrySync) updateRegistry() error {
 	registry := make(map[string][]string)
 
 	services, _, err := cs.Client.Catalog().Services(nil)
@@ -75,7 +95,7 @@ func (cs *ConsulSync) updateRegistry() error {
 	return nil
 }
 
-func (cs *ConsulSync) syncWatchers() {
+func (cs *RegistrySync) syncWatchers() {
 
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
@@ -101,7 +121,7 @@ func (cs *ConsulSync) syncWatchers() {
 	}
 }
 
-func (cs *ConsulSync) startServiceWatcher(service string) error {
+func (cs *RegistrySync) startServiceWatcher(service string) error {
 	wt, err := watch.Parse(map[string]interface{}{"type": "service", "service": service})
 	if err != nil {
 		return err
@@ -112,7 +132,7 @@ func (cs *ConsulSync) startServiceWatcher(service string) error {
 	return nil
 }
 
-func (cs *ConsulSync) handleServiceChanges(idx uint64, data interface{}) {
+func (cs *RegistrySync) handleServiceChanges(idx uint64, data interface{}) {
 	log.Info("Service change detected")
 	err := cs.updateRegistry()
 	if err != nil {
@@ -120,34 +140,10 @@ func (cs *ConsulSync) handleServiceChanges(idx uint64, data interface{}) {
 	}
 }
 
-// StartCatalogWatcher starts a Consul watcher for service catalog changes
-func (cs *ConsulSync) StartCatalogWatcher() error {
-	wt, err := watch.Parse(map[string]interface{}{"type": "services"})
-	if err != nil {
-		return err
-	}
-	wt.Handler = cs.handleCatalogChanges
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-	cs.CatalogWatcher = wt
-	go wt.Run(cs.Config.Address)
-	return nil
-}
-
-func (cs *ConsulSync) handleCatalogChanges(idx uint64, data interface{}) {
+func (cs *RegistrySync) handleCatalogChanges(idx uint64, data interface{}) {
 	log.Info("Catalog change detected")
 	err := cs.updateRegistry()
 	if err != nil {
 		log.Warnf("ConsulSync.UpdateRegistry error %v", err.Error())
-	}
-}
-
-// Stop all Consul watchers
-func (cs *ConsulSync) Stop() {
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-	cs.CatalogWatcher.Stop()
-	for _, w := range cs.Watchers {
-		w.Stop()
 	}
 }
