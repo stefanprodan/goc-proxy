@@ -19,8 +19,8 @@ docker run -d -p 8000:8000 \
 -e SERVICE_CHECK_HTTP="/_/status" \
 -e SERVICE_CHECK_INTERVAL="15s" \
 $image goc-proxy \
--ServiceName=$image \
--ClusterName=cl1 \
+-Node=$image \
+-Cluster=cl1 \
 -Environment=TEST \
 -LogLevel=info \
 -Port=8000 \

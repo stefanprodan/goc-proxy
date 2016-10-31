@@ -3,8 +3,9 @@ package main
 // Config holds global configuration, defaults are provided in main.
 // GOC-Proxy config is populated from startup flag.
 type Config struct {
-	ServiceName         string
-	ClusterName         string
+	Node                string
+	Cluster             string
+	Domain              string
 	Environment         string
 	LogLevel            string
 	Port                int

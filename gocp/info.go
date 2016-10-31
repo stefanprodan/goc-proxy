@@ -24,6 +24,7 @@ func Info() map[string]string {
 		"Uptime":    fmt.Sprintf("%v", Uptime),
 		"Version":   Version,
 		"BuildDate": BuildDate,
+		"Revision":  Revision,
 		"Branch":    Branch,
 		"GoVersion": GoVersion,
 		"Hostname":  Hostname,

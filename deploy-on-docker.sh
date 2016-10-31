@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+read -p "Enter domain: " domain
+
 image="goc-proxy"
 
 # build image
@@ -19,12 +21,11 @@ docker run -d -p 8000:8000 \
 -e SERVICE_CHECK_HTTP="/_/status" \
 -e SERVICE_CHECK_INTERVAL="15s" \
 $image goc-proxy \
--ServiceName=$image \
--ClusterName=cl1 \
 -Environment=TEST \
 -LogLevel=info \
 -Port=8000 \
--MaxIdleConnsPerHost=10000 
+-MaxIdleConnsPerHost=10000 \
+-Domain=$domain
 
 sleep 1
 info="$(curl -fsSL "http://${hostIP}:8000/_/status")"

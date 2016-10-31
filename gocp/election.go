@@ -26,11 +26,11 @@ func NewLeadershipElection(config *Config) (*LeadershipElection, error) {
 	if err != nil {
 		return nil, err
 	}
-	lockKey := config.ElectionKeyPrefix + config.ClusterName
+	lockKey := config.ElectionKeyPrefix + config.Cluster
 	opts := &consul_api.LockOptions{
 		Key: lockKey,
 		SessionOpts: &consul_api.SessionEntry{
-			Name:      config.ServiceName,
+			Name:      config.Node,
 			LockDelay: time.Duration(5 * time.Second),
 			TTL:       "10s",
 		},

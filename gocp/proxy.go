@@ -69,11 +69,23 @@ func (r *ReverseProxy) Stop() {
 // ReverseHandlerFunc creates a http handler that will resolve services from registry
 func (r *ReverseProxy) ReverseHandlerFunc() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		service, err := extractServiceName(req.URL)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		service := ""
+		if r.Config.Domain == "" {
+			s, err := r.serviceFromURL(req.URL)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			service = s
+		} else {
+			s, err := r.serviceFromDomain(req.Host)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			service = s
 		}
+
 		//resolve service name address
 		endpoints, _ := r.Registry.Lookup(service)
 
@@ -111,20 +123,37 @@ func (t *ProxyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	proxy_roundtrips_latency.WithLabelValues(t.Service).Observe(time.Since(start).Seconds())
+
+	response.Header.Set("Server", "GOC-Proxy")
+	response.Header.Set("X-GOC-Proxy-Version", Version)
+
 	return response, err
 }
 
-// extracts the service name from the URL, http://<proxy>/<service_name>/path/to
-func extractServiceName(target *url.URL) (name string, err error) {
+// extracts the service name from the URL: http://<proxy.com>/<service_name>/path/to
+func (r *ReverseProxy) serviceFromURL(target *url.URL) (name string, err error) {
 	path := target.Path
 	if len(path) > 1 && path[0] == '/' {
 		path = path[1:]
 	}
 	tmp := strings.Split(path, "/")
 	if len(tmp) < 1 {
-		return "", fmt.Errorf("xproxy: parse service name failed, invalid path %s", path)
+		return "", fmt.Errorf("parse service name failed, invalid path %s", path)
 	}
 	name = tmp[0]
 	target.Path = "/" + strings.Join(tmp[1:], "/")
+	return name, nil
+}
+
+// extracts the service name from the domain: http://<service_name>.<proxy.com>/path/to
+func (r *ReverseProxy) serviceFromDomain(hostname string) (name string, err error) {
+	// strip port number from host name
+	path := strings.Split(hostname, ":")[0]
+	domain := "." + r.Config.Domain
+	validDomain := strings.HasSuffix(path, domain)
+	if !validDomain {
+		return "", fmt.Errorf("invaid domain %s expected %s", path, r.Config.Domain)
+	}
+	name = strings.Replace(path, domain, "", 1)
 	return name, nil
 }
